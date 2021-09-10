@@ -13,6 +13,7 @@ const Contact_Model = require("../models/Contact");
 const Company_Model = require("../models/Company");
 const Template_Model = require("../models/Templates");
 const Snippet_Model = require("../models/Snippet");
+const Task_Model = require("../models/Task");
 
 function isNumeric(str) {
   if (typeof str != "string") return false; // we only process strings!
@@ -69,19 +70,218 @@ router.get("/getallcompanies", async (req, res) => {
   }
 });
 
+router.post("/savetask", async (req, res) => {
+  const { formData, option, value } = req.body;
+  switch (value) {
+    case 0:
+      const newTask0 = new Task_Model({
+        contact: formData.contact0,
+        notes: formData.notes0,
+        type: option,
+        completed: false,
+        value,
+      });
+      try {
+        await newTask0.save();
+        res.status(201).json(newTask0);
+      } catch (error) {
+        res.status(409).json({ message: error.message });
+      }
+      break;
+    case 1:
+      const newTask1 = new Task_Model({
+        contact: formData.contact1,
+        notes: formData.notes1,
+        result: formData.result1,
+        type: option,
+        completed: false,
+        value,
+      });
+      try {
+        await newTask1.save();
+        res.status(201).json(newTask1);
+      } catch (error) {
+        res.status(409).json({ message: error.message });
+      }
+      break;
+    case 2:
+      const newTask2 = new Task_Model({
+        contact: formData.contact2,
+        description: formData.desc2,
+        date: formData.date2,
+        type: option,
+        completed: false,
+        value,
+      });
+      try {
+        await newTask2.save();
+        res.status(201).json(newTask2);
+      } catch (error) {
+        res.status(409).json({ message: error.message });
+      }
+      break;
+    case 3:
+      const newTask3 = new Task_Model({
+        contact: formData.contact3,
+        description: formData.desc3,
+        date: formData.date3,
+        action: formData.action3,
+        type: option,
+        completed: false,
+        value,
+      });
+      try {
+        await newTask3.save();
+        res.status(201).json(newTask3);
+      } catch (error) {
+        res.status(409).json({ message: error.message });
+      }
+      break;
+  }
+});
+
+router.patch("/edittask", async (req, res) => {
+  const { formData, option, value } = req.body;
+  if (value === 0) {
+    await Task_Model.findByIdAndUpdate(
+      formData.id,
+      {
+        contact: formData.contact0,
+        notes: formData.notes0,
+        type: option,
+        completed: false,
+        value,
+      },
+      {
+        new: true,
+        useFindAndModify: false,
+      }
+    );
+  }
+  if (value === 1) {
+    await Task_Model.findByIdAndUpdate(
+      formData.id,
+      {
+        contact: formData.contact1,
+        notes: formData.notes1,
+        result: formData.result1,
+        type: option,
+        completed: false,
+        value,
+      },
+      {
+        new: true,
+        useFindAndModify: false,
+      }
+    );
+  }
+  if (value === 2) {
+    await Task_Model.findByIdAndUpdate(
+      formData.id,
+      {
+        contact: formData.contact2,
+        description: formData.desc2,
+        date: formData.date2,
+        type: option,
+        completed: false,
+        value,
+      },
+      {
+        new: true,
+        useFindAndModify: false,
+      }
+    );
+  }
+  if (value === 3) {
+    try {
+      await Task_Model.findByIdAndUpdate(
+        formData.id,
+        {
+          contact: formData.contact3,
+          description: formData.desc3,
+          date: formData.date3,
+          action: formData.action3,
+          type: option,
+          completed: false,
+          value,
+        },
+        {
+          new: true,
+          useFindAndModify: false,
+        }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  res.status(201).json({ message: "Updated" });
+});
+
+router.get("/getalltasks", async (req, res) => {
+  try {
+    const allTasks = await Task_Model.find();
+    res.status(201).json(allTasks);
+  } catch (error) {
+    res.status(409).json({ message: error.message });
+  }
+});
+
+router.delete("/deletetask/:id", async (req, res) => {
+  const { id: id } = req.params;
+  const task = await Task_Model.findByIdAndDelete(id);
+  res.json(task);
+});
+
+router.patch("/completetask/:id", async (req, res) => {
+  try {
+    const { id: id } = req.params;
+    const updatedTask = await Task_Model.findOneAndUpdate(
+      { _id: id },
+      { completed: true },
+      {
+        new: true,
+        useFindAndModify: false,
+      }
+    );
+    res.json(updatedTask);
+  } catch (error) {
+    console.log(error);
+  }
+});
+
 router.post("/addtemplate", async (req, res) => {
   const formData = req.body;
-  const newTemplate = new Template_Model({
-    ...formData,
-    tag: formData.tag.split(","),
-  });
 
   try {
+    const newTemplate = new Template_Model({
+      ...formData,
+      tag: String(formData.tag).split(","),
+    });
     await newTemplate.save();
     res.status(201).json(newTemplate);
   } catch (error) {
     res.status(409).json({ message: error.message });
   }
+});
+
+router.get("/searchonetemplate/:id", async (req, res) => {
+  const { id: id } = req.params;
+  const template = await Template_Model.find({ _id: id });
+  res.json(template);
+});
+
+router.patch("/edittemplate", async (req, res) => {
+  const formData = req.body;
+  const template = await Template_Model.findOneAndUpdate(
+    { _id: formData._id },
+    { ...formData, tag: formData.tag.split(",") },
+    {
+      new: true,
+      useFindAndModify: false,
+    }
+  );
+  res.json({ message: "Template Edited" });
 });
 
 router.patch("/addtagtotemplate", async (req, res) => {
@@ -158,6 +358,25 @@ router.post("/searchtemplate", async (req, res) => {
   }
 });
 
+router.post("/deletetemplate", async (req, res) => {
+  const selected = req.body;
+  const promiseArray = selected.map(async (each) => {
+    return new Promise(async (resolve, reject) => {
+      await Template_Model.findByIdAndDelete(each);
+      return resolve();
+    });
+  });
+  Promise.all(promiseArray).then(async () => {
+    try {
+      res.status(200).json(selected);
+    } catch (error) {
+      res.status(409).json({ message: error.message });
+    }
+  });
+});
+
+// SNIPPETS
+
 router.post("/searchsnippet", async (req, res) => {
   try {
     const { searchQuery: name, type } = req.body;
@@ -175,28 +394,55 @@ router.post("/searchsnippet", async (req, res) => {
   }
 });
 
-router.delete("/deletetemplate/:id", async (req, res) => {
-  const { id: _id } = req.params;
-  await Template_Model.findByIdAndRemove(_id, { useFindAndModify: false });
-});
-
-router.delete("/deletesnippet/:id", async (req, res) => {
-  const { id: _id } = req.params;
-  await Snippet_Model.findByIdAndRemove(_id, { useFindAndModify: false });
+router.post("/deletesnippet", async (req, res) => {
+  const selected = req.body;
+  const promiseArray = selected.map(async (each) => {
+    return new Promise(async (resolve, reject) => {
+      await Snippet_Model.findByIdAndDelete(each);
+      return resolve();
+    });
+  });
+  Promise.all(promiseArray).then(async () => {
+    try {
+      res.status(200).json(selected);
+    } catch (error) {
+      res.status(409).json({ message: error.message });
+    }
+  });
 });
 
 router.post("/addsnippet", async (req, res) => {
   const formData = req.body;
-  const newTemplate = new Snippet_Model({
+  const newSnippet = new Snippet_Model({
     ...formData,
+    tag: formData.tag.split(","),
   });
 
   try {
-    await newTemplate.save();
-    res.status(201).json(newTemplate);
+    await newSnippet.save();
+    res.status(201).json(newSnippet);
   } catch (error) {
     res.status(409).json({ message: error.message });
   }
+});
+
+router.get("/searchonesnippet/:id", async (req, res) => {
+  const { id: id } = req.params;
+  const snippet = await Snippet_Model.find({ _id: id });
+  res.json(snippet);
+});
+
+router.patch("/editsnippet", async (req, res) => {
+  const formData = req.body;
+  const snippet = await Snippet_Model.findOneAndUpdate(
+    { _id: formData._id },
+    { ...formData, tag: formData.tag.split(",") },
+    {
+      new: true,
+      useFindAndModify: false,
+    }
+  );
+  res.json({ message: "Snippet Edited" });
 });
 
 router.get("/getallsnippets/:type", async (req, res) => {
@@ -308,5 +554,55 @@ router.get(
       .catch((err) => res.status(400).json(`Error: ${err}`));
   }
 );
+
+router.post("/searchtask", async (req, res) => {
+  const { contact, type, status } = req.body;
+  try {
+    const contactr = new RegExp(contact, "i");
+    const typer = new RegExp(type, "i");
+    const newStatus =
+      status === "none"
+        ? null
+        : status.toUpperCase() === "COMPLETED"
+        ? true
+        : false;
+
+    const tasks = await Task_Model.find({
+      $or: [{ contact: contactr }, { type: typer }, { completed: newStatus }],
+    });
+    res.status(200).json(tasks);
+    // console.log(tasks);
+  } catch (error) {
+    console.log(error);
+  }
+});
+router.post("/filtersnippet", async (req, res) => {
+  const { name, desc, tag, type } = req.body;
+  try {
+    const namer = new RegExp(name, "i");
+    const descr = new RegExp(desc, "i");
+    const snippets = await Snippet_Model.find({
+      $or: [{ name: namer }, { description: descr }, { tag: { $in: tag } }],
+      type: type,
+    });
+    res.status(200).json(snippets);
+  } catch (error) {
+    console.log(error);
+  }
+});
+router.post("/filtertemplate", async (req, res) => {
+  const { name, desc, tag, type } = req.body;
+  try {
+    const namer = new RegExp(name, "i");
+    const descr = new RegExp(desc, "i");
+    const templates = await Template_Model.find({
+      $or: [{ name: namer }, { subject: descr }, { tag: { $in: tag } }],
+      type: type,
+    });
+    res.status(200).json(templates);
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 module.exports = router;
