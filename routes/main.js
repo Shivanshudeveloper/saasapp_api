@@ -38,6 +38,20 @@ router.post("/addcontact", async (req, res) => {
   }
 });
 
+//
+router.patch("/editcontact", async (req, res) => {
+  const formData = req.body;
+  try {
+    await Contact_Model.findByIdAndUpdate(formData._id, formData, {
+      new: true,
+      useFindAndModify: false,
+    });
+    res.status(201).json({ message: "Updated" });
+  } catch (error) {
+    res.status(409).json({ message: error.message });
+  }
+});
+
 router.get("/getallcontact", async (req, res) => {
   try {
     const allContacts = await Contact_Model.find({});
@@ -265,6 +279,20 @@ router.post("/addtemplate", async (req, res) => {
   }
 });
 
+router.post("/addtemplatefromexcel", async (req, res) => {
+  const finalData = req.body;
+
+  finalData.map(async (data) => {
+    try {
+      const newTemplate = new Template_Model(data);
+      await newTemplate.save();
+    } catch (error) {
+      res.status(409).json({ message: error.message });
+    }
+  });
+  res.status(201).json({ message: "Templates Added" });
+});
+
 router.get("/searchonetemplate/:id", async (req, res) => {
   const { id: id } = req.params;
   const template = await Template_Model.find({ _id: id });
@@ -448,7 +476,10 @@ router.patch("/editsnippet", async (req, res) => {
 router.get("/getallsnippets/:type", async (req, res) => {
   const { type: type } = req.params;
   try {
-    const allCompanies = await Snippet_Model.find({ type: type });
+    const allCompanies = await Snippet_Model.find({
+      type: type,
+      archive: false,
+    });
     res.status(201).json(allCompanies);
   } catch (error) {
     res.status(409).json({ message: error.message });
@@ -602,6 +633,82 @@ router.post("/filtertemplate", async (req, res) => {
     res.status(200).json(templates);
   } catch (error) {
     console.log(error);
+  }
+});
+
+router.get("/getallsnippestfortemplates", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  Snippet_Model.find({})
+    .then((data) => {
+      res.status(200).json(data);
+    })
+    .catch((err) => res.status(400).json(`Error: ${err}`));
+});
+
+router.get("/getalltags", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  var allTagsaArr = [];
+  Snippet_Model.find({}, { tag: 1 })
+    .then((data) => {
+      data.map((d) => {
+        var newTag = d.tag;
+        newTag.map((t) => {
+          allTagsaArr.push({ t });
+        });
+      });
+      res.status(200).json(allTagsaArr);
+    })
+    .catch((err) => res.status(400).json(`Error: ${err}`));
+});
+
+router.get("/getalltagstemplates", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  var allTagsaArr = [];
+  Template_Model.find({}, { tag: 1 })
+    .then((data) => {
+      data.map((d) => {
+        var newTag = d.tag;
+        newTag.map((t) => {
+          allTagsaArr.push({ t });
+        });
+      });
+      res.status(200).json(allTagsaArr);
+    })
+    .catch((err) => res.status(400).json(`Error: ${err}`));
+});
+
+router.post("/archivesnippet", async (req, res) => {
+  const selected = req.body;
+  res.setHeader("Content-Type", "application/json");
+
+  selected.map((s) => {
+    Snippet_Model.findOne({ _id: s })
+      .then((data) => {
+        let a = data.archive;
+        Snippet_Model.findOneAndUpdate(
+          { _id: s },
+          { archive: !a },
+          { useFindAndModify: false }
+        )
+          .then(() => {
+            res.status(200).json("Added Archive");
+          })
+          .catch((err) => console.log(err));
+      })
+      .catch((err) => console.log(err));
+  });
+});
+
+router.get("/getallsnippetsarchive/:type", async (req, res) => {
+  const { type: type } = req.params;
+  try {
+    const allCompanies = await Snippet_Model.find({
+      type: type,
+      archive: true,
+    });
+    res.status(201).json(allCompanies);
+  } catch (error) {
+    res.status(409).json({ message: error.message });
   }
 });
 
