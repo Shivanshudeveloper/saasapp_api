@@ -1,4 +1,6 @@
 const express = require("express");
+const cron = require("node-cron");
+const nodemailer = require("nodemailer");
 const router = express.Router();
 const stripe = require("stripe")(
   "sk_test_51IdwfeH8KzFo5uc9YHKzp2HOPkZJvH0ij0qhWeg0wQ17G73o5fVJYjMkWOfAmWUgjVZe0DesJvrQKbmAPSacXsVP00qMXnEqFr"
@@ -1051,6 +1053,8 @@ router.post("/addtasksequence", async (req, res) => {
         instruction: formData.instruction1,
         run: formData.run1,
         priority: formData.priority1,
+        checked: formData.checked1,
+        time: formData.time1,
         option: option,
         value,
         stepNo: sequence.steps.length + 1,
@@ -1069,6 +1073,8 @@ router.post("/addtasksequence", async (req, res) => {
         type: formData.type2,
         notes: formData.notes2,
         run: formData.run2,
+        checked: formData.checked2,
+        time: formData.time2,
         priority: formData.priority2,
         option: option,
         value,
@@ -1088,6 +1094,8 @@ router.post("/addtasksequence", async (req, res) => {
         type: formData.type3,
         notes: formData.notes3,
         run: formData.run3,
+        checked: formData.checked3,
+        time: formData.time3,
         priority: formData.priority3,
         option: option,
         value,
@@ -1126,7 +1134,6 @@ router.post("/addtasksequence", async (req, res) => {
 });
 router.get("/gettasksequence/:id", async (req, res) => {
   const { id } = req.params;
-  console.log("id", id);
   if (id !== undefined)
     try {
       const sequence = await Sequence_Model.findById(id);
@@ -1169,51 +1176,131 @@ router.get("/getdetails/:id", async (req, res) => {
     res.status(409).json({ message: error.message });
   }
 });
-router.post("/adddetails/:id", async (req, res) => {
-  const { email } = req.body;
-  const { id } = req.params;
-  console.log(email);
-  try {
-    const userDetails = await User_Model.find({ userId: id });
-    userDetails[0].emails.push({ email: email });
-    const newUser = await User_Model.findByIdAndUpdate(
-      userDetails[0]._id,
-      userDetails[0],
-      {
-        new: true,
-        useFindAndModify: false,
-      }
-    );
-    console.log(newUser);
-    res.status(201).json(newUser);
-  } catch (error) {
-    console.log(error);
-    res.status(409).json({ message: error.message });
-  }
-});
-router.post("/updatedetails", async (req, res) => {
+
+router.post("/adddetails", async (req, res) => {
   const formData = req.body;
   try {
-    const userDetails = await User_Model.find({ userId: formData.userId });
-    if (userDetails.length === 0) {
-      const newUser = new User_Model(formData);
-      await newUser.save();
-      res.status(201).json({ message: newUser });
-    } else {
-      const newUser1 = await User_Model.findByIdAndUpdate(
-        userDetails[0]._id,
-        formData,
-        {
-          new: true,
-          useFindAndModify: false,
-        }
-      );
-      res.status(201).json({ message: newUser1 });
-    }
+    const newUser = new User_Model(formData);
+    await newUser.save();
+    res.status(201).json({ message: newUser });
   } catch (error) {
     console.log(error);
     res.status(409).json({ message: error.message });
   }
 });
+router.post("/editdetails", async (req, res) => {
+  const formData = req.body;
+  try {
+    const newUser = await User_Model.findByIdAndUpdate(
+      { _id: formData._id },
+      formData,
+      { useFindAndModify: false }
+    );
+    res.status(201).json({ message: newUser });
+  } catch (error) {
+    console.log(error);
+    res.status(409).json({ message: error.message });
+  }
+});
+
+// //////////////////
+// Schedule Event
+// //////////////////
+
+// async function getDet() {
+//   const sequence = await Sequence_Model.find();
+//   const currentDay = new Date().getDay();
+//   const currentTime = new Date().getHours();
+
+//   cron.schedule("* * * * *", function () {
+//     console.log("--------");
+//     sequence[0].steps.map(async (seq) => {
+//       if (String(currentDay) === String(seq.run - 1)) {
+//         if (seq?.time === undefined) {
+//           console.log("Today", seq?.option);
+//         } else {
+//           // console.log("Today ", seq?.option, " at ", seq?.time.split(":")[0]);
+//           // if (seq?.time.split(":")[0] === currentTime) {
+//           const userEmails = await Sequence_Model.findById(sequence[0]._id);
+//           if (seq.option === "Email") {
+//             // userEmails.map((person) => {
+//             //   console.log(person.email);
+//             // });
+//             // try {
+//             //   (transporter = nodemailer.createTransport({
+//             //     service: "gmail",
+//             //     auth: {
+//             //       user: "evencloudupload@gmail.com",
+//             //       pass: "Evencloud@1234",
+//             //     },
+//             //   })),
+//             //     (mailOption = {
+//             //       from: "evencloudupload@gmail.com",
+//             //       to: "",
+//             //       subject: seq?.templateName,
+//             //       html: seq?.templateDesc,
+//             //     }),
+//             //     transporter.sendMail(mailOption, (err, data) => {
+//             //       console.log("Email Sent!");
+//             //     });
+//             // } catch (error) {
+//             //   console.log(error);
+//             // }
+//           }
+//           // }
+//         }
+//       }
+//     });
+//     console.log("********");
+//     console.log("");
+//   });
+// }
+
+async function getDet1() {
+  const sequence = await Sequence_Model.find();
+  const currentDay = new Date().getDay();
+  const currentTime = new Date().getHours();
+
+  cron.schedule("0 * * * *", function () {
+    sequence[2].prospects.map(async (seq) => {
+      if (String(currentDay) === String(seq?.type?.run - 1)) {
+        // console.log(userDetails[0].emails);
+
+        if (seq?.type?.time.split(":")[0] === String(currentTime)) {
+          if (seq?.type?.option === "Email") {
+            const userDetails = await User_Model.find();
+            let password = "";
+            userDetails.map((user) => {
+              if (user.email === seq?.email) password = user.password;
+            });
+            try {
+              (transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                  user: seq?.email,
+                  pass: password,
+                },
+              })),
+                (mailOption = {
+                  from: seq?.email,
+                  to: seq?.contact?.email,
+                  subject: seq?.type?.templateName,
+                  html: seq?.type?.templateDesc,
+                }),
+                transporter.sendMail(mailOption, (err, data) => {
+                  console.log("Email Sent!");
+                });
+            } catch (error) {
+              console.log(error);
+            }
+          }
+        }
+      }
+    });
+    console.log("********");
+  });
+}
+
+getDet1();
 
 module.exports = router;
