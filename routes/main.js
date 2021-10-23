@@ -391,6 +391,23 @@ router.get("/getalltasks", async (req, res) => {
     res.status(409).json({ message: error.message });
   }
 });
+
+router.get("/getspecifictasks/:type/:status", async (req, res) => {
+  const { type, status } = req.params;
+  let flag;
+  if (status === "completed") flag = true;
+  else flag = false;
+  try {
+    const allTasks = await Task_Model.find({
+      type: type,
+      completed: flag,
+    }).sort({ date: -1 });
+    res.status(201).json(allTasks);
+  } catch (error) {
+    res.status(409).json({ message: error.message });
+  }
+});
+
 router.get("/getcomingtasks", async (req, res) => {
   newDate = new Date();
   try {
@@ -1302,5 +1319,50 @@ async function getDet1() {
 }
 
 getDet1();
+
+router.post("/testsequence", async (req, res) => {
+  const { testData } = req.body;
+
+  const sequence = await Sequence_Model.find();
+
+  let i = 0;
+  cron.schedule(`*/${Number(testData)} * * * *`, function () {
+    if (i < 3) {
+      sequence[2].prospects.map(async (seq) => {
+        if (seq?.type?.option === "Email") {
+          const userDetails = await User_Model.find();
+          let password = "";
+          userDetails.map((user) => {
+            if (user.email === seq?.email) password = user.password;
+          });
+          try {
+            (transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: seq?.email,
+                pass: password,
+              },
+            })),
+              (mailOption = {
+                from: seq?.email,
+                to: seq?.contact?.email,
+                subject: seq?.type?.templateName,
+                html: seq?.type?.templateDesc,
+              }),
+              transporter.sendMail(mailOption, (err, data) => {
+                console.log("Email Sent!");
+              });
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      });
+      i = i + 1;
+      console.log("--------", i);
+    } else {
+      return res.status(201);
+    }
+  });
+});
 
 module.exports = router;
